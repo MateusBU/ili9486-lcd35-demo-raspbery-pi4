@@ -3,21 +3,21 @@
 
 #include <stdint.h>
 
-// ─── Pinos SPI (BCM numbering) ───────────────────────────────────────────────
-#define PIN_DC   24   // Data/Command (GPIO24)
+// ─── SPI Pins (BCM numbering) ────────────────────────────────────────────────
+#define PIN_DC   24             // Data/Command (GPIO24)
 #define PIN_RST   27            // Reset        (GPIO27)
 #define PIN_CS    8             // Chip Select  (CE0 = GPIO8)
-// MOSI = GPIO10, SCLK = GPIO11 (gerenciados pelo SPI do kernel)
+// MOSI = GPIO10, SCLK = GPIO11 (managed by kernel SPI)
 
-// ─── Configuração SPI ────────────────────────────────────────────────────────
+// ─── SPI Configuration ───────────────────────────────────────────────────────
 #define SPI_DEV       "/dev/spidev0.0"
-#define SPI_SPEED_HZ  64000000  // 64 MHz — Pi4 aguenta; reduza para 32000000 se instável
+#define SPI_SPEED_HZ  64000000  // 64 MHz — Pi4 handles it; reduce to 32000000 if unstable
 
-// ─── Dimensões do display ────────────────────────────────────────────────────
+// ─── Display Dimensions ──────────────────────────────────────────────────────
 #define LCD_WIDTH   320
 #define LCD_HEIGHT  480
 
-// ─── Cores RGB565 ────────────────────────────────────────────────────────────
+// ─── RGB565 Colors ───────────────────────────────────────────────────────────
 #define COLOR_BLACK   0x0000
 #define COLOR_WHITE   0xFFFF
 #define COLOR_RED     0xF800
@@ -29,7 +29,7 @@
 #define COLOR_ORANGE  0xFD20
 #define COLOR_GRAY    0x8410
 
-// ─── Comandos ILI9486 ────────────────────────────────────────────────────────
+// ─── ILI9486 Commands ────────────────────────────────────────────────────────
 #define ILI9486_NOP        0x00
 #define ILI9486_SWRESET    0x01
 #define ILI9486_SLPOUT     0x11
@@ -48,33 +48,33 @@
 #define ILI9486_IFCTRL     0xF6
 #define ILI9486_IFMODE     0xB0
 
-// ─── Framebuffer (double-buffer sem piscar) ──────────────────────────────────
-// Todas as funções fb_* desenham no buffer em RAM.
-// Chame fb_flush() ou fb_flush_rect() para enviar ao display de uma vez.
+// ─── Framebuffer (flicker-free double-buffer) ────────────────────────────────
+// All fb_* functions draw into the RAM buffer.
+// Call fb_flush() or fb_flush_rect() to send everything to the display at once.
 #define FB_SIZE (LCD_WIDTH * LCD_HEIGHT)   // 153600 pixels = 307200 bytes
 
-extern uint16_t fb[FB_SIZE];   // buffer de pixels RGB565
+extern uint16_t fb[FB_SIZE];   // RGB565 pixel buffer
 
-// converte (x,y) em índice no buffer
+// Converts (x,y) to buffer index
 static inline int fb_idx(int x, int y) { return y * LCD_WIDTH + x; }
 
-// Escreve pixel direto no buffer (sem enviar ao display)
+// Writes pixel directly to buffer (without sending to display)
 static inline void fb_pixel(int x, int y, uint16_t c) {
     if ((unsigned)x < LCD_WIDTH && (unsigned)y < LCD_HEIGHT)
         fb[fb_idx(x,y)] = c;
 }
 
-// Envia buffer inteiro ao display — chame uma vez por frame
+// Sends entire buffer to display — call once per frame
 void fb_flush(void);
 
-// Envia apenas uma região retangular (mais rápido se só parte mudou)
+// Sends only a rectangular region (faster if only part changed)
 void fb_flush_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
 
-// Preenche o buffer (sem enviar)
+// Fills the buffer (without sending)
 void fb_clear(uint16_t color);
 void fb_fill_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 
-// Primitivas que desenham no buffer
+// Primitives that draw into the buffer
 void fb_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
 void fb_draw_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 void fb_draw_circle(int16_t cx, int16_t cy, int16_t r, uint16_t color);
@@ -82,7 +82,7 @@ void fb_fill_circle(int16_t cx, int16_t cy, int16_t r, uint16_t color);
 void fb_draw_char(uint16_t x, uint16_t y, char c, uint16_t fg, uint16_t bg, uint8_t scale);
 void fb_draw_string(uint16_t x, uint16_t y, const char *s, uint16_t fg, uint16_t bg, uint8_t scale);
 
-// ─── API legada (escreve direto no display, sem buffer) ──────────────────────
+// ─── Legacy API (writes directly to display, no buffer) ──────────────────────
 int  lcd_init(void);
 void lcd_close(void);
 void lcd_reset(void);
@@ -90,7 +90,7 @@ void lcd_send_cmd(uint8_t cmd);
 void lcd_send_data(uint8_t data);
 void lcd_set_window(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1);
 void lcd_fill_screen(uint16_t color);
-void lcd_flush(void);          // envia framebuffer inteiro ao display (chame 1x por frame)
+void lcd_flush(void);          // sends entire framebuffer to display (call once per frame)
 void lcd_fill_rect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color);
 void lcd_draw_pixel(uint16_t x, uint16_t y, uint16_t color);
 void lcd_draw_line(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);

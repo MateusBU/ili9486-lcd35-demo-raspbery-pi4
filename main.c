@@ -1,11 +1,11 @@
 /*
- * main.c — Demo ILI9486 with FRAMEBUFFER
+ * main.c — ILI9486 Demo with FRAMEBUFFER
  *
  * Every scene is animated using fb_clear() + fb_*() + fb_flush()
  * Display is only touched once per frame → zero flickering
  *
- * Compilar: gcc -O2 -o demo main.c ili9486.c -lwiringPi -lm
- * Executar: sudo ./demo
+ * Compile: gcc -O2 -o demo main.c ili9486.c -lwiringPi -lm
+ * Run:     sudo ./demo
  */
 
 #include "ili9486.h"
@@ -31,17 +31,17 @@ static void demo_intro(void) {
     fb_clear(rgb(10, 10, 30));
     fb_draw_string(20,  40, "ILI9486 DEMO",      COLOR_CYAN,   rgb(10,10,30), 3);
     fb_draw_string(32,  90, "Raspberry Pi 4",    COLOR_WHITE,  rgb(10,10,30), 2);
-    fb_draw_string(28, 120, "Framebuffer ativo", COLOR_YELLOW, rgb(10,10,30), 1);
+    fb_draw_string(28, 120, "Framebuffer active",COLOR_YELLOW, rgb(10,10,30), 1);
     fb_draw_line(10, 140, 310, 140, COLOR_CYAN);
     fb_draw_line(10, 142, 310, 142, rgb(0,100,150));
-    fb_draw_string(20, 460, "Sem piscar!", COLOR_GREEN, rgb(10,10,30), 1);
+    fb_draw_string(20, 460, "No flickering!", COLOR_GREEN, rgb(10,10,30), 1);
     fb_flush();
     delay(2500);
 }
 
-// ─── Bola quicando ────────────────────────────────────────────────────────
+// ─── Bouncing ball ────────────────────────────────────────────────────────
 static void demo_bola(void) {
-    printf("  [2/4] Bola quicando...\n");
+    printf("  [2/4] Bouncing ball...\n");
     float bx=160, by=100, vx=2.8f, vy=2.2f;
     int r=20;
     uint16_t bg = rgb(10,10,25);
@@ -77,9 +77,9 @@ static void demo_bola(void) {
     }
 }
 
-// ─── Ondas senoidais ──────────────────────────────────────────────────────
+// ─── Sine waves ───────────────────────────────────────────────────────────
 static void demo_ondas(void) {
-    printf("  [3/4] Ondas...\n");
+    printf("  [3/4] Waves...\n");
     uint16_t bg=rgb(5,5,20);
 
     for (int frame=0;frame<200;frame++) {
@@ -87,8 +87,8 @@ static void demo_ondas(void) {
         fb_clear(bg);
 
         float phase=frame*0.08f;
-        typedef struct{float amp,freq,ph;uint16_t color;}Onda;
-        Onda ondas[]={
+        typedef struct{float amp,freq,ph;uint16_t color;}Wave;
+        Wave waves[]={
             {60,0.025f,phase,       COLOR_CYAN},
             {40,0.040f,phase*1.3f,  COLOR_GREEN},
             {30,0.060f,phase*0.7f,  COLOR_MAGENTA},
@@ -97,17 +97,17 @@ static void demo_ondas(void) {
         for (int o=0;o<3;o++) {
             int prev_y=-1;
             for (int x=0;x<LCD_WIDTH;x++) {
-                int y=(int)(LCD_HEIGHT/2+ondas[o].amp*sinf(ondas[o].freq*x+ondas[o].ph));
+                int y=(int)(LCD_HEIGHT/2+waves[o].amp*sinf(waves[o].freq*x+waves[o].ph));
                 y=y<0?0:(y>=LCD_HEIGHT?LCD_HEIGHT-1:y);
                 if (prev_y>=0) {
                     int y0=prev_y<y?prev_y:y, y1=prev_y<y?y:prev_y;
-                    for (int fy=y0;fy<=y1;fy++) fb_pixel(x,fy,ondas[o].color);
-                } else fb_pixel(x,y,ondas[o].color);
+                    for (int fy=y0;fy<=y1;fy++) fb_pixel(x,fy,waves[o].color);
+                } else fb_pixel(x,y,waves[o].color);
                 prev_y=y;
             }
         }
         fb_draw_line(0,LCD_HEIGHT/2,LCD_WIDTH-1,LCD_HEIGHT/2,rgb(40,40,40));
-        fb_draw_string(4,4,"Ondas senoidais",COLOR_WHITE,bg,1);
+        fb_draw_string(4,4,"Sine waves",COLOR_WHITE,bg,1);
         fb_flush();
         uint32_t el=millis_now()-t0;
         if(el<33) delay(33-el);
@@ -116,21 +116,21 @@ static void demo_ondas(void) {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────
 //
-// Estratégia anti-piscar:
-//   1. Primeiro frame: desenha fundo estático completo + fb_flush() (1x só)
-//   2. Frames seguintes: redesenha APENAS as regiões que mudam e chama
-//      fb_flush_rect() em cada região individualmente.
-//      O fundo, títulos e bordas NÃO são reenviados.
+// Anti-flicker strategy:
+//   1. First frame: draw complete static background + fb_flush() (only once)
+//   2. Subsequent frames: redraw ONLY the regions that change and call
+//      fb_flush_rect() on each region individually.
+//      Background, titles and borders are NOT resent.
 //
-// Regiões dinâmicas (as únicas que mudam frame a frame):
-//   R1 — Valor de temperatura   (x=16, y=60, w=128, h=18)
-//   R2 — Barra de temperatura   (x=55, y=125, w=38, h=80)
-//   R3 — Valor de umidade       (x=175, y=60, w=128, h=18)
-//   R4 — Barra de umidade       (x=228, y=125, w=38, h=80)
-//   R5 — Sparklines             (x=5, y=255, w=310, h=90)
-//   R6 — Rodapé (frame counter) (x=4, y=462, w=120, h=10)
+// Dynamic regions (the only ones that change frame to frame):
+//   R1 — Temperature value     (x=16,  y=60,  w=128, h=18)
+//   R2 — Temperature bar       (x=55,  y=125, w=38,  h=80)
+//   R3 — Humidity value        (x=175, y=60,  w=128, h=18)
+//   R4 — Humidity bar          (x=228, y=125, w=38,  h=80)
+//   R5 — Sparklines            (x=5,   y=255, w=310, h=90)
+//   R6 — Footer (frame counter)(x=4,   y=462, w=120, h=10)
 
-// Dimensões das regiões dinâmicas
+// Dynamic region dimensions
 #define R_TVAL_X  16
 #define R_TVAL_Y  60
 #define R_TVAL_W  128
@@ -162,7 +162,7 @@ static void demo_ondas(void) {
 #define R_FOOT_H  10
 
 static void dashboard_draw_static(uint16_t bg) {
-    // Chamado UMA vez — desenha tudo que não muda
+    // Called ONCE — draws everything that doesn't change
     fb_clear(bg);
 
     // Header
@@ -170,26 +170,26 @@ static void dashboard_draw_static(uint16_t bg) {
     fb_draw_string(55,8,"SENSOR DASHBOARD",COLOR_WHITE,rgb(0,70,140),1);
     fb_draw_line(0,28,LCD_WIDTH,28,COLOR_CYAN);
 
-    // Fundo bloco temperatura
+    // Temperature block background
     fb_fill_rect(8,38,145,75,rgb(35,10,10));
     fb_draw_rect(8,38,145,75,rgb(200,50,50));
-    fb_draw_string(16,44,"TEMPERATURA",rgb(255,120,120),rgb(35,10,10),1);
+    fb_draw_string(16,44,"TEMPERATURE",rgb(255,120,120),rgb(35,10,10),1);
 
-    // Fundo bloco umidade
+    // Humidity block background
     fb_fill_rect(167,38,145,75,rgb(10,10,40));
     fb_draw_rect(167,38,145,75,rgb(50,100,255));
-    fb_draw_string(175,44,"UMIDADE %",rgb(100,160,255),rgb(10,10,40),1);
+    fb_draw_string(175,44,"HUMIDITY %",rgb(100,160,255),rgb(10,10,40),1);
 
-    // Molduras das barras
+    // Bar borders
     fb_draw_rect(R_TBAR_X, R_TBAR_Y, R_TBAR_W, R_TBAR_H+2, COLOR_GRAY);
     fb_draw_string(48,215,"TEMP",COLOR_GRAY,bg,1);
     fb_draw_rect(R_UBAR_X, R_UBAR_Y, R_UBAR_W, R_UBAR_H+2, COLOR_GRAY);
-    fb_draw_string(221,215,"UMID",COLOR_GRAY,bg,1);
+    fb_draw_string(221,215,"HMDT",COLOR_GRAY,bg,1);
 
-    // Área dos sparklines
+    // Sparklines area
     fb_draw_rect(4,240,LCD_WIDTH-8,110,COLOR_GRAY);
-    fb_draw_string(8,244,"Temp (historico):",COLOR_GRAY,bg,1);
-    fb_draw_string(8,330,"Umid (historico):",COLOR_GRAY,bg,1);
+    fb_draw_string(8,244,"Temp (history):",COLOR_GRAY,bg,1);
+    fb_draw_string(8,330,"Hmdt (history):",COLOR_GRAY,bg,1);
 }
 
 static void demo_dashboard(void) {
@@ -200,7 +200,7 @@ static void demo_dashboard(void) {
     float hist_t[HIST]={0}, hist_u[HIST]={0};
     int hpos=0;
 
-    // ── Frame 0: fundo estático, flush completo (único flush full) ────────
+    // ── Frame 0: static background, full flush (only full flush) ─────────
     dashboard_draw_static(bg);
     fb_flush();
 
@@ -217,25 +217,25 @@ static void demo_dashboard(void) {
 
         uint16_t tc=temp>35?COLOR_RED:(temp>28?COLOR_ORANGE:COLOR_GREEN);
 
-        // ── R1: valor temperatura ──────────────────────────────────────
+        // ── R1: temperature value ──────────────────────────────────────
         fb_fill_rect(R_TVAL_X, R_TVAL_Y, R_TVAL_W, R_TVAL_H, rgb(35,10,10));
         char tbuf[16]; snprintf(tbuf,sizeof(tbuf),"%.1f C",temp);
         fb_draw_string(R_TVAL_X, R_TVAL_Y, tbuf, tc, rgb(35,10,10), 2);
         fb_flush_rect(R_TVAL_X, R_TVAL_Y, R_TVAL_W, R_TVAL_H);
 
-        // ── R2: barra temperatura ──────────────────────────────────────
+        // ── R2: temperature bar ────────────────────────────────────────
         int tbh=(int)((temp-15)/30.0f*R_TBAR_H);
         fb_fill_rect(R_TBAR_X, R_TBAR_Y, R_TBAR_W, R_TBAR_H, rgb(25,25,25));
         if(tbh>0) fb_fill_rect(R_TBAR_X, R_TBAR_Y+R_TBAR_H-tbh, R_TBAR_W, tbh, tc);
         fb_flush_rect(R_TBAR_X, R_TBAR_Y, R_TBAR_W, R_TBAR_H);
 
-        // ── R3: valor umidade ──────────────────────────────────────────
+        // ── R3: humidity value ─────────────────────────────────────────
         fb_fill_rect(R_UVAL_X, R_UVAL_Y, R_UVAL_W, R_UVAL_H, rgb(10,10,40));
         char ubuf[16]; snprintf(ubuf,sizeof(ubuf),"%.1f%%",umid);
         fb_draw_string(R_UVAL_X, R_UVAL_Y, ubuf, COLOR_CYAN, rgb(10,10,40), 2);
         fb_flush_rect(R_UVAL_X, R_UVAL_Y, R_UVAL_W, R_UVAL_H);
 
-        // ── R4: barra umidade ──────────────────────────────────────────
+        // ── R4: humidity bar ───────────────────────────────────────────
         int ubh=(int)((umid-30)/60.0f*R_UBAR_H);
         fb_fill_rect(R_UBAR_X, R_UBAR_Y, R_UBAR_W, R_UBAR_H, rgb(25,25,25));
         if(ubh>0) fb_fill_rect(R_UBAR_X, R_UBAR_Y+R_UBAR_H-ubh, R_UBAR_W, ubh, COLOR_BLUE);
@@ -249,41 +249,42 @@ static void demo_dashboard(void) {
             int W=R_SPARK_W-4;
             int tx0=R_SPARK_X+2+(i-1)*W/HIST;
             int tx1=R_SPARK_X+2+i*W/HIST;
-            // Sparkline temperatura (faixa y: R_SPARK_Y+5 .. R_SPARK_Y+38)
+            // Temperature sparkline (y range: R_SPARK_Y+5 .. R_SPARK_Y+38)
             int ty0=R_SPARK_Y+38-(int)((hist_t[i0]-15)/30.0f*33);
             int ty1=R_SPARK_Y+38-(int)((hist_t[i1]-15)/30.0f*33);
             fb_draw_line(tx0,ty0,tx1,ty1,COLOR_GREEN);
-            // Sparkline umidade (faixa y: R_SPARK_Y+50 .. R_SPARK_Y+83)
+            // Humidity sparkline (y range: R_SPARK_Y+50 .. R_SPARK_Y+83)
             int uy0=R_SPARK_Y+83-(int)((hist_u[i0]-30)/60.0f*33);
             int uy1=R_SPARK_Y+83-(int)((hist_u[i1]-30)/60.0f*33);
             fb_draw_line(tx0,uy0,tx1,uy1,COLOR_CYAN);
         }
         fb_flush_rect(R_SPARK_X, R_SPARK_Y, R_SPARK_W, R_SPARK_H);
 
-        // ── R6: rodapé ─────────────────────────────────────────────────
+        // ── R6: footer ─────────────────────────────────────────────────
         fb_fill_rect(R_FOOT_X, R_FOOT_Y, R_FOOT_W, R_FOOT_H, bg);
         char fr[32]; snprintf(fr,sizeof(fr),"Frame %03d/150",frame+1);
         fb_draw_string(R_FOOT_X, R_FOOT_Y, fr, COLOR_GRAY, bg, 1);
         fb_flush_rect(R_FOOT_X, R_FOOT_Y, R_FOOT_W, R_FOOT_H);
 
-        // Cap a ~30fps
+        // Cap at ~30fps
         uint32_t el=millis_now()-t0;
         if(el<33) delay(33-el);
     }
 }
-// ─── Quadrados coloridos ──────────────────────────────────────────────────
-// Desenha uma grade de quadrados, cada um com cor diferente e nome em inglês.
-// O texto é preto se a cor for clara, branco se for escura (legibilidade).
- 
+
+// ─── Color squares ────────────────────────────────────────────────────────
+// Draws a grid of squares, each with a different color and its name.
+// Text is black on light colors, white on dark colors (readability).
+
 static void demo_color_squares(void) {
     printf("  [5/5] Color squares...\n");
- 
+
     typedef struct {
         uint16_t    color;
         const char *name;
     } ColorEntry;
- 
-    // 15 cores — 3 colunas × 5 linhas
+
+    // 15 colors — 3 columns × 5 rows
     static const ColorEntry colors[] = {
         {0xF800, "RED"      },
         {0x07E0, "GREEN"    },
@@ -301,71 +302,71 @@ static void demo_color_squares(void) {
         {0x7800, "MAROON"   },
         {0xFEA0, "GOLD"     },
     };
- 
+
     const int COLS    = 3;
     const int ROWS    = 5;
     const int MARGIN  = 6;
     const int SQ_W    = (LCD_WIDTH  - (COLS + 1) * MARGIN) / COLS;   // ~96px
     const int SQ_H    = (LCD_HEIGHT - (ROWS + 1) * MARGIN) / ROWS;   // ~87px
- 
+
     fb_clear(rgb(20, 20, 20));
- 
+
     for (int i = 0; i < ROWS * COLS; i++) {
         int col = i % COLS;
         int row = i / COLS;
- 
+
         int x = MARGIN + col * (SQ_W + MARGIN);
         int y = MARGIN + row * (SQ_H + MARGIN);
- 
+
         uint16_t bg  = colors[i].color;
         uint16_t fg;
- 
-        // Luminância aproximada em RGB565 → decide se texto é preto ou branco
+
+        // Approximate luminance in RGB565 → decide if text is black or white
         uint8_t r5 = (bg >> 11) & 0x1F;
         uint8_t g6 = (bg >>  5) & 0x3F;
         uint8_t b5 = (bg >>  0) & 0x1F;
-        // Normaliza para 0-255 e aplica pesos de luminância
+        // Normalize to 0-255 and apply luminance weights
         uint32_t lum = (uint32_t)r5 * 8 * 299
                      + (uint32_t)g6 * 4 * 587
                      + (uint32_t)b5 * 8 * 114;
         fg = (lum > 128000) ? COLOR_BLACK : COLOR_WHITE;
- 
-        // Quadrado preenchido
+
+        // Filled square
         fb_fill_rect(x, y, SQ_W, SQ_H, bg);
- 
-        // Borda fina para separar quadrados de cor similar
+
+        // Thin border to separate similar-colored squares
         fb_draw_rect(x, y, SQ_W, SQ_H, fg == COLOR_BLACK ? rgb(180,180,180) : rgb(60,60,60));
- 
-        // Centraliza o texto no quadrado
+
+        // Center text inside the square
         int name_len  = 0;
         const char *p = colors[i].name;
         while (*p++) name_len++;
-        int char_w    = 6 * 2;  // escala 2: cada char ocupa 6px de largura
-        int char_h    = 8 * 2;  // escala 2: cada char ocupa 8px de altura
+        int char_w    = 6 * 2;  // scale 2: each char is 6px wide
+        int char_h    = 8 * 2;  // scale 2: each char is 8px tall
         int txt_x     = x + (SQ_W - name_len * char_w) / 2;
         int txt_y     = y + (SQ_H - char_h) / 2;
- 
+
         fb_draw_string(txt_x, txt_y, colors[i].name, fg, bg, 2);
     }
- 
+
     fb_flush();
     delay(4000);
 }
- 
+
 // ─── main ─────────────────────────────────────────────────────────────────
 int main(void) {
-    printf("=== Demo ILI9486 com Framebuffer ===\n");
-    if (lcd_init() < 0) { fprintf(stderr,"Falha LCD\n"); return 1; }
+    printf("=== ILI9486 Demo with Framebuffer ===\n");
+    if (lcd_init() < 0) { fprintf(stderr,"LCD init failed\n"); return 1; }
     demo_intro();
     demo_bola();
     demo_ondas();
     demo_dashboard();
     demo_color_squares();
     fb_clear(COLOR_BLACK);
-    fb_draw_string(30,210,"Demo concluida!",COLOR_GREEN,COLOR_BLACK,2);
-    fb_draw_string(40,240,"Sem piscar :)",  COLOR_CYAN, COLOR_BLACK,2);
+    fb_draw_string(30,210,"Demo complete!",  COLOR_GREEN, COLOR_BLACK, 2);
+    fb_draw_string(40,240,"No flickering :)", COLOR_CYAN,  COLOR_BLACK, 2);
     fb_flush();
-    printf("=== Finalizado ===\n");
+    printf("=== Done ===\n");
     lcd_close();
     return 0;
 }
