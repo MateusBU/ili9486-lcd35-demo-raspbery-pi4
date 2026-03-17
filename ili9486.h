@@ -11,7 +11,7 @@
 
 // ─── SPI Configuration ───────────────────────────────────────────────────────
 #define SPI_DEV       "/dev/spidev0.0"
-#define SPI_SPEED_HZ  64000000  // 64 MHz — Pi4 handles it; reduce to 32000000 if unstable
+#define SPI_SPEED_HZ  32000000  // 32 MHz — is stabled,  max is 64000000 if unstable
 
 // ─── Display Dimensions ──────────────────────────────────────────────────────
 #define LCD_WIDTH   320
