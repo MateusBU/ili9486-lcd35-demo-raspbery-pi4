@@ -358,8 +358,8 @@ int main(void) {
     printf("=== ILI9486 Demo with Framebuffer ===\n");
     if (lcd_init() < 0) { fprintf(stderr,"LCD init failed\n"); return 1; }
     demo_intro();
-    demo_bola();
-    demo_ondas();
+    // demo_bola();
+    // demo_ondas();
     demo_dashboard();
     demo_color_squares();
     fb_clear(COLOR_BLACK);

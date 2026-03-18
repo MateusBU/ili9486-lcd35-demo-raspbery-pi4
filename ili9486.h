@@ -5,7 +5,7 @@
 
 // ─── SPI Pins (BCM numbering) ────────────────────────────────────────────────
 #define PIN_DC   24             // Data/Command (GPIO24)
-#define PIN_RST   27            // Reset        (GPIO27)
+#define PIN_RST   25            // Reset        (GPIO27)
 #define PIN_CS    8             // Chip Select  (CE0 = GPIO8)
 // MOSI = GPIO10, SCLK = GPIO11 (managed by kernel SPI)
 
