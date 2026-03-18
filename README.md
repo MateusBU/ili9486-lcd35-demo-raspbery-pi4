@@ -10,7 +10,7 @@ Demo and examples for the 3.5" ILI9486 SPI LCD display on Raspberry Pi 4.
 | SCLK   | GPIO11               |
 | CS     | GPIO8 (CE0)          |
 | DC     | GPIO24               |
-| RST    | GPIO27               |
+| RST    | GPIO25               |
 | Touch CS | GPIO7 (HIGH = disabled) |
 
 > SPI interface: `/dev/spidev0.0` at **64 MHz** (reduce to 32 MHz if unstable)
